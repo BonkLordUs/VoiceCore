@@ -3,6 +3,7 @@
 
 CREATE TYPE dob_visibility AS ENUM ('FULL_DATE','AGE_ONLY','DATE_WITHOUT_YEAR','NOBODY');
 ALTER TABLE profiles ALTER COLUMN username TYPE varchar(64);
+ALTER TABLE privacy_settings ALTER COLUMN dob DROP DEFAULT;
 ALTER TABLE privacy_settings
   ALTER COLUMN dob TYPE dob_visibility USING (
     CASE dob::text
