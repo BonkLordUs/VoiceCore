@@ -6,7 +6,7 @@ for table in ['users','profiles','privacy_settings','wallets','transactions','re
 assert 'one_direct_referrer' in sql
 assert "CHECK(sender_id<>recipient_id)" in sql
 assert 'idempotency_key text UNIQUE NOT NULL' in sql
-assert (root/'apps/web/index.html').exists()
+assert (root/'apps/web/index.html').exists()\nassert (root/'db/migrations/0002_full_requirements.sql').exists()\nassert (root/'docs/full-product-requirements.md').exists()
 assert (root/'.env.example').exists()
 assert (root/'apps/web/manifest.webmanifest').exists()
 assert (root/'apps/web/service-worker.js').exists()
