@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VoiceCore — Private by design</title><meta name="theme-color" content="#7551eb"><link rel="stylesheet" href="styles.css"></head>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VoiceCore — Private by design</title><meta name="theme-color" content="#7551eb"><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="dev-login.css"></head>
 <body>
 <div class="app-shell">
 <aside class="sidebar">
@@ -34,4 +34,22 @@
 <section id="creator" class="page"><div class="dashboard-head"><div><span class="section-kicker">PERMISSION-GATED WORKSPACE</span><h2>Creator dashboard</h2><p>Moderation, revenue, reports and operational controls.</p></div><span class="role-badge">CREATOR</span></div><div class="metric-grid"><article class="metric"><small>Revenue</small><strong>18,420 VH</strong><span>+12.4% · 30 days</span></article><article class="metric"><small>Messages</small><strong>42.8K</strong><span>+8.1% · 30 days</span></article><article class="metric"><small>Reports</small><strong>23</strong><span>7 pending review</span></article><article class="metric"><small>Active sessions</small><strong>1,284</strong><span>Across VoiceCore</span></article></div><div class="dashboard-grid"><article class="panel"><div class="panel-head"><div><h3>Operations queue</h3><p>Actions require the matching permission.</p></div><button class="text-button" data-action="audit">Audit log</button></div><div class="queue-row"><span class="severity medium">MED</span><div><b>Report #VC-1842</b><small>Harassment · 12 min ago</small></div><button data-action="review">Review</button></div><div class="queue-row"><span class="severity high">HIGH</span><div><b>Report #VC-1837</b><small>Threats · 31 min ago</small></div><button data-action="review">Review</button></div><div class="queue-row"><span class="severity low">LOW</span><div><b>Helper application #72</b><small>Awaiting review</small></div><button data-action="review">Review</button></div></article><article class="panel"><div class="panel-head"><div><h3>Revenue trend</h3><p>Illustrative dashboard data</p></div><span class="status-dot">Live</span></div><div class="chart"><span style="height:35%"></span><span style="height:50%"></span><span style="height:42%"></span><span style="height:68%"></span><span style="height:60%"></span><span style="height:82%"></span><span style="height:74%"></span><span style="height:94%"></span></div></article></div></section>
 
 <nav class="mobile-nav"><button data-page="chats">◌<small>Chats</small></button><button data-page="anonymous">✦<small>Anonymous</small></button><button data-page="wallet">◈<small>Wallet</small></button><button data-page="profile">◉<small>Profile</small></button><button data-page="creator">▦<small>Creator</small></button></nav>
-</main></div><div class="toast" role="status"></div><div id="modalRoot"></div><script src="app.js"></script></body></html>
+</main></div><div class="toast" role="status"></div><div class="dev-login" id="devLogin">
+  <div class="dev-login-card">
+    <span class="section-kicker">LOCAL DEVELOPMENT</span>
+    <h2>VoiceCore messenger</h2>
+    <p>This local build has two ready test accounts. No phone number or SMS is required.</p>
+    <div class="dev-login-note">DEV MODE · PostgreSQL + REST + WebSocket</div>
+    <div class="dev-login-grid">
+      <button class="dev-account" data-login-user="alexvc"><b>Alex Volkov</b><small>@alexvc</small></button>
+      <button class="dev-account" data-login-user="mayavc"><b>Maya Chen</b><small>@mayavc</small></button>
+    </div>
+    <form class="dev-login-form" id="loginForm">
+      <input id="loginUsername" autocomplete="username" placeholder="Username" required>
+      <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Password" required>
+      <button type="submit">Sign in</button>
+      <div class="dev-login-error" id="loginError"></div>
+    </form>
+    <p class="muted">Test password for both accounts: <b>Test1234!</b></p>
+  </div>
+</div><div id="modalRoot"></div><script src="app.js"></script></body></html>
