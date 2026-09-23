@@ -54,3 +54,99 @@ The complete VoiceCore product scope is now captured in [full product requiremen
 Migration `0002_full_requirements.sql` extends the foundation with streamer settings, admin action records, role/helper approval workflows, configurable DOB visibility, operational indexes and the full permission/configuration seed.
 
 Implementation remains incremental: preserve working code, keep production adapters separate from development mocks, and finish each phase with server-side authorization, persistence, contracts, tests and audit/privacy controls.
+
+## Local two-account messenger test
+
+This repository now includes a **development-only runnable messenger**: PostgreSQL, a small REST API, WebSocket realtime delivery, and the existing web UI are started together with Docker Compose.
+
+### 1. Install prerequisites
+
+Install:
+- Docker Desktop (Windows/macOS) or Docker Engine + Compose (Linux)
+- Git
+
+### 2. Get the project
+
+```bash
+git clone https://github.com/BonkLordUs/VoiceCore.git
+cd VoiceCore
+```
+
+### 3. Start everything
+
+```bash
+docker compose up --build
+```
+
+Wait until the log contains:
+
+```
+VoiceCore local dev: http://0.0.0.0:3000
+```
+
+### 4. Open it on the computer
+
+Open:
+
+```
+http://localhost:3000
+```
+
+The login screen already contains two local accounts. No phone number, SMS, email verification, or payment provider is used.
+
+| Account | Username | Password |
+|---|---|---|
+| Alex Volkov | `alexvc` | `Test1234!` |
+| Maya Chen | `mayavc` | `Test1234!` |
+
+### 5. Test two devices
+
+Keep the Docker process running.
+
+On the computer, sign in as **Alex**.
+
+Find the computer's LAN IP:
+- Windows: `ipconfig`
+- macOS/Linux: `ip addr` (or `ifconfig`)
+
+Look for an address such as `192.168.1.25`.
+
+On the phone, connect to the **same Wi-Fi** and open:
+
+```
+http://192.168.1.25:3000
+```
+
+Replace the IP with the computer's actual LAN IP.
+
+Sign in on the phone as **Maya**. Then send a message from either device. Messages are persisted in PostgreSQL and delivered to the other open client through WebSocket.
+
+### 6. Stop / reset the local database
+
+Stop:
+
+```bash
+docker compose down
+```
+
+To completely reset the local database and recreate the two test accounts/chat:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+### What is live in this local test
+
+- Two password-authenticated development accounts
+- No phone numbers or SMS
+- Persistent PostgreSQL chat history
+- Login/session handling
+- REST chat history and message creation
+- WebSocket realtime message delivery
+- Desktop + phone on the same LAN
+- Existing VoiceCore UI, theme, profile and product shell
+
+Voice/video, payments, anonymous matching, moderation workflows and production authentication providers remain separate product layers and are not enabled by this local messenger test.
+
+**Important:** the credentials above are development credentials only. Do not deploy `DEV_MODE=true` or `dev_credentials` to production.

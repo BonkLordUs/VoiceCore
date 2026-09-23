@@ -1,52 +1,125 @@
-const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const toast=$('.toast'), title=$('#pageTitle'), modalRoot=$('#modalRoot');
-const names={chats:'Good evening, Alex',anonymous:'Anonymous matching',wallet:'VH Wallet',gifts:'Gift store',profile:'Profile',creator:'Creator workspace'};
-let toastTimer;
+const names={chats:'Good evening',anonymous:'Anonymous matching',wallet:'VH Wallet',gifts:'Gift store',profile:'Profile',creator:'Creator workspace'};
+let toastTimer, currentUser=null, currentChat=null, socket=null;
+
 function show(m){clearTimeout(toastTimer);toast.textContent=m;toast.classList.add('show');toastTimer=setTimeout(()=>toast.classList.remove('show'),2600)}
-function openPage(name){$$('.page').forEach(p=>p.classList.toggle('active-page',p.id===name));$$('.nav-item[data-page],.mobile-nav [data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===name));title.textContent=names[name]||name;history.replaceState(null,'','#'+name);window.scrollTo({top:0,behavior:'smooth'})}
-function modal({heading,body,confirm='Continue',onConfirm=()=>{}}){const el=document.createElement('div');el.className='modal-backdrop';el.innerHTML='<section class="modal" role="dialog" aria-modal="true"><button class="modal-close">×</button><h2>'+heading+'</h2><div class="modal-body">'+body+'</div><footer><button class="modal-cancel">Cancel</button><button class="modal-confirm">'+confirm+'</button></footer></section>';modalRoot.append(el);const close=()=>el.remove();$('.modal-close',el).onclick=close;$('.modal-cancel',el).onclick=close;el.addEventListener('click',e=>{if(e.target===el)close()});$('.modal-confirm',el).onclick=()=>{onConfirm(el);close()};setTimeout(()=>$('.modal-close',el)?.focus(),0)}
-function applyTheme(theme){document.documentElement.dataset.theme=theme;localStorage.setItem('voicecore.theme',theme);$('#themeLabel').textContent=theme==='dark'?'Dark theme':'Light theme';$('#themeIcon').textContent=theme==='dark'?'☾':'☀'}
-const saved=localStorage.getItem('voicecore.theme');applyTheme(saved||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
-$('#themeToggle').onclick=()=>applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
-$('#privacyButton').onclick=e=>{e.currentTarget.classList.toggle('enabled');const on=e.currentTarget.classList.contains('enabled');localStorage.setItem('voicecore.streamerMode',on);show(on?'Streamer mode enabled.':'Streamer mode disabled.')};
-if(localStorage.getItem('voicecore.streamerMode')==='true')$('#privacyButton').classList.add('enabled');
-$$('[data-page]').forEach(b=>b.addEventListener('click',()=>openPage(b.dataset.page)));
-$$('[data-page-go]').forEach(b=>b.addEventListener('click',()=>openPage(b.dataset.pageGo)));
-$('#newChat').onclick=()=>modal({heading:'Start a secure chat',body:'<label>Username or User ID<input id="recipient" placeholder="@username or 1234567890"></label><p class="form-note">A server-side permission check is required before delivery.</p>',confirm:'Create chat',onConfirm:n=>show($('#recipient',n).value.trim()?'Chat request created.':'Enter a username or User ID.')});
-$('#mobileMenu').onclick=()=>$('.sidebar').classList.toggle('mobile-open');
-$('#searchButton').onclick=()=>modal({heading:'Search VoiceCore',body:'<label>Search chats, users or messages<input id="searchInput" placeholder="Try Maya, #campaign or message text"></label><div class="search-hints"><span>Recent: Maya Chen</span><span>VoiceCore updates</span><span>#campaign</span></div>',confirm:'Search',onConfirm:n=>show('Search query queued for Search Service: '+($('#searchInput',n).value.trim()||'empty'))});
-$('#notifyButton').onclick=()=>modal({heading:'Notifications',body:'<div class="notice"><b>New gift</b><span>Maya sent you a Heart · 2m ago</span></div><div class="notice"><b>Privacy update</b><span>New streamer controls are available · 1h ago</span></div><div class="notice"><b>Creator review</b><span>Report #VC-1842 needs attention · 12m ago</span></div>',confirm:'Mark all read',onConfirm:()=>show('Notifications marked as read.')});
-$$('.chat-row').forEach(row=>row.onclick=()=>{const name=row.dataset.name;$$('.chat-row').forEach(r=>r.classList.remove('selected'));row.classList.add('selected');$('#conversationName').innerHTML=name+' <span class="online-dot"></span>';show('Opened '+name+'.')});
-$('#composer').onsubmit=e=>{e.preventDefault();const input=$('input',e.currentTarget),text=input.value.trim();if(!text)return;const b=document.createElement('div');b.className='bubble outgoing';b.textContent=text;const t=document.createElement('time');t.textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+' ✓';b.append(t);$('#messages').append(b);input.value='';show('Message queued for Chat Service.')};
-function walletSend(){modal({heading:'Send VH Coins',body:'<label>Recipient<input id="transferUser" placeholder="@username"></label><label>Amount<input id="transferAmount" type="number" min="1" placeholder="100"></label><p class="form-note">Fees and authorization are calculated server-side.</p>',confirm:'Review transfer',onConfirm:n=>{const a=Number($('#transferAmount',n).value);show(a>0?'Transfer draft created for '+a+' VH.':'Enter an amount greater than zero.')}})}
-function topup(pkg){modal({heading:'Top up VH wallet',body:'<label>Package<select id="topupPkg"><option>100 VH</option><option '+(pkg==='500'?'selected':'')+'>500 VH</option><option '+(pkg==='1000'?'selected':'')+'>1,000 VH</option><option '+(pkg==='5000'?'selected':'')+'>5,000 VH</option></select></label><p class="form-note">Payment confirmation must arrive through a verified provider webhook.</p>',confirm:'Continue to payment',onConfirm:n=>show($('#topupPkg',n).value+' checkout requires a configured payment provider.')})}
-function gift(name,price){modal({heading:'Send '+name,body:'<label>Recipient<input id="giftRecipient" placeholder="@username"></label><p class="gift-confirm">◇ '+price+' VH · '+name+'</p>',confirm:'Send gift',onConfirm:n=>show($('#giftRecipient',n).value.trim()?name+' gift draft created.':'Choose a recipient.')})}
-function report(){modal({heading:'Report content',body:'<label>Category<select><option>Harassment</option><option>Spam</option><option>Threats</option><option>NSFW</option><option>Scam</option><option>Other</option></select></label><label>Context<textarea placeholder="What happened?"></textarea></label>',confirm:'Submit report',onConfirm:()=>show('Report prepared for the moderation queue.'))}
-document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.closest('.modal'))return;
-if(b.dataset.action==='send')return walletSend();if(b.dataset.action==='topup')return topup();if(b.dataset.action==='premium')return modal({heading:'Core Premium',body:'<p>Unlock cosmetic themes, profile accents, badges and expanded personalization.</p><div class="premium-list"><span>✓ Premium themes</span><span>✓ Profile styling</span><span>✓ Exclusive badges</span><span>✓ No administrative permissions</span></div><label>Plan<select><option>Monthly</option><option>Yearly</option></select></label>',confirm:'Continue',onConfirm:()=>show('Premium checkout is ready for the Premium Service.')});
-if(b.dataset.action==='match')return show('Match preferences saved. Matchmaking Service will apply age, block-list and safety checks.');
-if(b.dataset.action==='receive')return modal({heading:'Receive VH Coins',body:'<div class="receive-code">VC-ALEX-2840</div><p class="form-note">Share this receive code only with someone you trust.</p>',confirm:'Copy code',onConfirm:()=>show('Receive code copied locally.')});
-if(b.dataset.action==='edit-profile')return modal({heading:'Edit profile',body:'<label>Display name<input value="Alex Volkov"></label><label>Bio<textarea placeholder="Tell people a little about you"></textarea></label><label>Username<input value="@alexv"></label>',confirm:'Save profile',onConfirm:()=>show('Profile changes saved locally.')});
-if(b.dataset.action==='privacy')return modal({heading:'Privacy controls',body:'<div class="privacy-list"><span>Profile discoverability <b>Limited</b></span><span>Date of birth <b>Private</b></span><span>Online status <b>Contacts</b></span><span>Anonymous matching <b>Allowed</b></span></div>',confirm:'Done'});
-if(b.dataset.action==='blocked')return modal({heading:'Blocked users',body:'<div class="notice"><b>@nightowl</b><span>Blocked Sep 18</span></div><div class="notice"><b>@unknown_47</b><span>Blocked Sep 12</span></div>',confirm:'Done'});
-if(b.dataset.action==='delete')return modal({heading:'Delete account',body:'<p>This permanently removes your account data according to the configured retention policy. Active financial or moderation records may be retained where required.</p><label>Type DELETE to continue<input id="deleteConfirm"></label>',confirm:'Delete account',onConfirm:n=>show($('#deleteConfirm',n).value==='DELETE'?'Deletion request created.':'Deletion cancelled — exact confirmation required.')});
-if(b.dataset.action==='streamer')return $('#privacyButton').click();
-if(b.dataset.action==='copy')return show('Referral code copied locally.');
-if(b.dataset.action==='review')return report();
-if(b.dataset.action==='audit')return modal({heading:'Audit log',body:'<div class="notice"><b>Role check</b><span>Creator permissions evaluated · 1m ago</span></div><div class="notice"><b>Report update</b><span>VC-1842 assigned · 12m ago</span></div>',confirm:'Close'});
-if(b.dataset.action==='room')return show('Private room setup requires authenticated realtime signaling.');
-if(b.dataset.action==='attach')return show('Attachment picker requires Storage Service.');
-if(b.dataset.action==='emoji')return show('Emoji picker ready for the messaging client.');
-if(b.dataset.action==='conversation-menu')return modal({heading:'Conversation',body:'<button class="menu-action" data-action="report">Report conversation</button><button class="menu-action">Mute notifications</button><button class="menu-action">Block user</button>',confirm:'Done'});
-if(b.dataset.action==='report')return report();
-if(b.dataset.action==='wallet-menu')return openPage('wallet');
-if(b.dataset.action==='transactions')return show('Transaction export requires Wallet Service.');
-if(b.dataset.action==='delete')return;
-if(b.dataset.gift)return gift(b.dataset.gift,b.dataset.price);
-if(b.dataset.package)return topup(b.dataset.package);
-if(b.dataset.themeChoice)return applyTheme(b.dataset.themeChoice);
-if(b.dataset.call)return show((b.dataset.call==='voice'?'Voice':'Video')+' call requires authenticated WebRTC signaling and an SFU.');
-if(b.id==='accountMenu')return modal({heading:'Account',body:'<div class="notice"><b>Alex Volkov</b><span>@alexv · Creator</span></div><button class="menu-action">Security sessions</button><button class="menu-action">Sign out</button>',confirm:'Close'});
-});
-$$('[data-theme-choice]').forEach(b=>b.onclick=()=>applyTheme(b.dataset.themeChoice));
-if(location.hash&&names[location.hash.slice(1)])openPage(location.hash.slice(1));
+function openPage(name){$$('.page').forEach(p=>p.classList.toggle('active-page',p.id===name));$$('.nav-item[data-page],.mobile-nav [data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===name));title.textContent=name==='chats'?'Good evening, '+(currentUser?.displayName||'Alex'):names[name]||name;history.replaceState(null,'','#'+name);window.scrollTo({top:0,behavior:'smooth'})}
+function modal({heading,body,confirm='Confirm',cancel='Cancel',danger=false,onConfirm}){
+  modalRoot.innerHTML='<div class="modal-backdrop"><div class="modal"><button class="modal-close" aria-label="Close">×</button><h3>'+heading+'</h3><div>'+body+'</div><div class="modal-actions"><button class="secondary modal-cancel">'+cancel+'</button><button class="'+(danger?'danger':'primary')+' modal-confirm">'+confirm+'</button></div></div></div>';
+  $('.modal-close').onclick=closeModal;$('.modal-cancel').onclick=closeModal;$('.modal-confirm').onclick=()=>{onConfirm?.();closeModal()};
+}
+function closeModal(){modalRoot.innerHTML=''}
+function authHeaders(){const t=localStorage.getItem('voicecore.devToken');return t?{Authorization:'Bearer '+t,'Content-Type':'application/json'}:{'Content-Type':'application/json'}}
+async function api(path,options={}){
+  const r=await fetch(path,{...options,headers:{...authHeaders(),...(options.headers||{})}});
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(data.error||'Request failed');
+  return data;
+}
+function setIdentity(){
+  if(!currentUser)return;
+  $$('.user-chip strong').forEach(x=>x.textContent=currentUser.displayName);
+  $$('.user-chip small').forEach(x=>x.textContent='@'+currentUser.username);
+  $$('.avatar-me').forEach(x=>x.textContent=currentUser.username.slice(0,2).toUpperCase());
+  const h=$('.profile-head h2');if(h)h.textContent=currentUser.displayName;
+  const p=$('.profile-head p');if(p)p.textContent='@'+currentUser.username+' · Local dev account';
+}
+function formatTime(value){return new Date(value).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function initials(name){return name.split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase()}
+async function loadChats(){
+  const chats=await api('/api/chats');
+  const list=$('.chat-list');
+  if(!chats.length){list.innerHTML='<div class="empty-state">No chats yet.</div>';return}
+  list.innerHTML=chats.map((c,i)=>'<article class="chat-row '+(i===0?'selected':'')+'" data-chat-id="'+c.id+'"><div class="avatar grad-one">VC</div><div><strong>'+escapeHtml(c.title||'Private chat')+' <span class="online-dot"></span></strong><p>'+escapeHtml(c.last_message||'No messages yet')+'</p></div><time>'+(c.last_message_at?formatTime(c.last_message_at):'')+'</time></article>').join('');
+  $$('.chat-row',list).forEach(row=>row.onclick=()=>selectChat(row.dataset.chatId));
+  await selectChat(chats[0].id);
+}
+function connectSocket(){
+  if(socket){try{socket.close()}catch{}}
+  const token=localStorage.getItem('voicecore.devToken');
+  const proto=location.protocol==='https:'?'wss':'ws';
+  socket=new WebSocket(proto+'://'+location.host+'/ws?token='+encodeURIComponent(token));
+  socket.onmessage=e=>{try{const m=JSON.parse(e.data);if(m.type==='message'&&m.message.chat_id===currentChat?.id){renderMessage(m.message,true);}}catch{}};
+  socket.onclose=()=>{if(localStorage.getItem('voicecore.devToken'))setTimeout(connectSocket,1500)};
+}
+async function subscribe(chatId){if(socket?.readyState===1)socket.send(JSON.stringify({type:'subscribe',chatId}));}
+async function selectChat(chatId){
+  currentChat={id:chatId};
+  $$('.chat-row').forEach(x=>x.classList.toggle('selected',x.dataset.chatId===chatId));
+  const chats=await api('/api/chats');const chat=chats.find(x=>x.id===chatId);
+  const name=chat?.title||'Private chat';
+  $('#conversationName').innerHTML=escapeHtml(name)+' <span class="online-dot"></span>';
+  $('#conversationAvatar').textContent='VC';
+  const msgs=await api('/api/chats/'+chatId+'/messages');
+  const box=$('#messages');box.innerHTML='<div class="day">TODAY</div>';
+  msgs.forEach(m=>renderMessage(m,false));
+  await subscribe(chatId);
+}
+function renderMessage(m,live){
+  const box=$('#messages');const mine=m.sender_id===currentUser.id;
+  const el=document.createElement('div');el.className='bubble '+(mine?'outgoing':'incoming');
+  el.innerHTML=escapeHtml(m.body)+' <time>'+formatTime(m.created_at)+(mine?' ✓✓':'')+'</time>';
+  box.appendChild(el);box.scrollTop=box.scrollHeight;
+  if(live)show(mine?'Message sent':'New message');
+}
+async function sendMessage(value){
+  if(!currentChat)return;
+  try{await api('/api/chats/'+currentChat.id+'/messages',{method:'POST',body:JSON.stringify({body:value})})}
+  catch(e){show(e.message)}
+}
+async function login(username,password){
+  const data=await api('/api/auth/login',{method:'POST',body:JSON.stringify({username,password})});
+  localStorage.setItem('voicecore.devToken',data.token);currentUser=data.user;
+  $('#devLogin').style.display='none';setIdentity();openPage('chats');connectSocket();await loadChats();show('Signed in as @'+currentUser.username);
+}
+function initTheme(){
+  const key='voicecore.theme';let theme=localStorage.getItem(key);
+  if(!theme)theme=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+  document.documentElement.dataset.theme=theme;
+  const icon=$('#themeIcon'),label=$('#themeLabel');
+  function paint(){const dark=document.documentElement.dataset.theme==='dark';icon.textContent=dark?'☀':'☾';label.textContent=dark?'Light theme':'Dark theme'}
+  paint();$('#themeToggle')?.addEventListener('click',()=>{const next=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=next;localStorage.setItem(key,next);paint()});
+  $$('[data-theme-choice]').forEach(b=>b.onclick=()=>{document.documentElement.dataset.theme=b.dataset.themeChoice;localStorage.setItem(key,b.dataset.themeChoice);paint()});
+}
+function bindUi(){
+  $$('[data-page]').forEach(b=>b.onclick=()=>openPage(b.dataset.page));
+  $$('[data-page-go]').forEach(b=>b.onclick=()=>openPage(b.dataset.pageGo));
+  $('#mobileMenu')?.addEventListener('click',()=>$('.sidebar').classList.toggle('mobile-open'));
+  $('#privacyButton')?.addEventListener('click',()=>show('Streamer mode is stored locally in this DEV build.'));
+  $('#notifyButton')?.addEventListener('click',()=>show('No new notifications.'));
+  $('#searchButton')?.addEventListener('click',()=>show('Search is available after the local chat service is connected.'));
+  $('#newChat')?.addEventListener('click',()=>show('The local DEV dataset contains the Alex ↔ Maya chat.'));
+  $('#accountMenu')?.addEventListener('click',()=>modal({heading:'Local account',body:'<p>You are signed in as <b>@'+escapeHtml(currentUser?.username||'')+'</b>.</p><p class="muted">To test the second account, open this address in another browser or on your phone and sign in as Maya.</p>',confirm:'Sign out',cancel:'Close',onConfirm:logout}));
+  $('#composer')?.addEventListener('submit',e=>{e.preventDefault();const input=$('input',e.currentTarget);const value=input.value.trim();if(value){input.value='';sendMessage(value)}});
+  $$('[data-call]').forEach(b=>b.onclick=()=>show('Voice/video calling is the next realtime layer; chat messaging is live now.'));
+  document.addEventListener('click',e=>{
+    const a=e.target.closest('[data-action]');
+    if(!a)return;
+    const act=a.dataset.action;
+    if(act==='premium')show('Core Premium UI is ready; billing is disabled in local DEV mode.');
+    else if(act==='wallet-menu'||act==='wallet')openPage('wallet');
+    else if(act==='send'||act==='receive'||act==='topup'||act==='transactions'||act==='copy')show('This action is intentionally disabled in local DEV mode.');
+    else if(act==='room')show('Voice room signaling is not enabled in this local messenger test.');
+    else if(act==='match')show('Matchmaking is not enabled in this local messenger test.');
+    else if(act==='delete')modal({heading:'Delete local account?',body:'<p>This local DEV build does not expose account deletion. Your database is local to Docker.</p>',confirm:'Close',cancel:'Cancel'});
+    else if(act==='edit-profile'||act==='privacy'||act==='blocked'||act==='audit'||act==='review')show('This screen is a product prototype; the local test focuses on authentication and messaging.');
+    else if(act==='conversation-menu')show('Conversation controls are not enabled in local DEV mode.');
+    else if(act==='attach'||act==='emoji')show('Attachments and emoji are not part of this local messenger test yet.');
+  });
+  $$('[data-gift]').forEach(b=>b.onclick=()=>show('Gift sending is disabled in local DEV mode.'));
+  $$('[data-package]').forEach(b=>b.onclick=()=>show('VH top-up is disabled in local DEV mode.'));
+}
+async function logout(){localStorage.removeItem('voicecore.devToken');if(socket)socket.close();location.reload()}
+async function boot(){
+  initTheme();bindUi();
+  $('.dev-account').forEach(b=>b.onclick=()=>{const u=b.dataset.loginUser;$('#loginUsername').value=u;$('#loginPassword').value='Test1234!';$('#loginForm').requestSubmit()});
+  $('#loginForm')?.addEventListener('submit',async e=>{e.preventDefault();const err=$('#loginError');err.textContent='';try{await login($('#loginUsername').value,$('#loginPassword').value)}catch(x){err.textContent='Invalid local credentials'}});
+  const token=localStorage.getItem('voicecore.devToken');
+  if(!token)return;
+  try{currentUser=await api('/api/me');$('#devLogin').style.display='none';setIdentity();connectSocket();await loadChats();openPage(location.hash.slice(1)||'chats')}
+  catch{localStorage.removeItem('voicecore.devToken')}
+}
+boot();
