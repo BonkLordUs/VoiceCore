@@ -30,7 +30,7 @@ python3 tests/validate_foundation.py
 
 ## Phone installation and Android release
 
-The web shell is an installable PWA when deployed over HTTPS. A signed Android host project and Play release instructions are available in [mobile release](docs/mobile-release.md). A workspace/private-network address cannot be opened by arbitrary phones on the Internet.
+The web shell is an installable PWA when deployed over HTTPS. A separate Android host project is configured for the deployed PWA; use the [fast APK guide](docs/android-fast-track.md) for a private test APK and [mobile release](docs/mobile-release.md) for Play release requirements. A workspace/private-network address cannot be opened by arbitrary phones on the Internet.
 
 ## Database
 
