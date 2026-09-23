@@ -115,11 +115,11 @@ function bindUi(){
 async function logout(){localStorage.removeItem('voicecore.devToken');if(socket)socket.close();location.reload()}
 async function boot(){
   initTheme();bindUi();
+  $('.dev-account').forEach(b=>b.onclick=()=>{const u=b.dataset.loginUser;$('#loginUsername').value=u;$('#loginPassword').value='Test1234!';$('#loginForm').requestSubmit()});
+  $('#loginForm')?.addEventListener('submit',async e=>{e.preventDefault();const err=$('#loginError');err.textContent='';try{await login($('#loginUsername').value,$('#loginPassword').value)}catch(x){err.textContent='Invalid local credentials'}});
   const token=localStorage.getItem('voicecore.devToken');
   if(!token)return;
   try{currentUser=await api('/api/me');$('#devLogin').style.display='none';setIdentity();connectSocket();await loadChats();openPage(location.hash.slice(1)||'chats')}
   catch{localStorage.removeItem('voicecore.devToken')}
-  $$('.dev-account').forEach(b=>b.onclick=()=>{const u=b.dataset.loginUser;$('#loginUsername').value=u;$('#loginPassword').value='Test1234!';$('#loginForm').requestSubmit()});
-  $('#loginForm')?.addEventListener('submit',async e=>{e.preventDefault();const err=$('#loginError');err.textContent='';try{await login($('#loginUsername').value,$('#loginPassword').value)}catch(x){err.textContent='Invalid local credentials'}});
 }
 boot();
