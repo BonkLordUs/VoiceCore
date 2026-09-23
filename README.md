@@ -45,3 +45,12 @@ The initial PostgreSQL schema is in `db/migrations/0001_foundation.sql`. Apply i
 5. External payment, OTP, malware scanning, and moderation providers are ports behind server-side adapters; development adapters cannot be selected in production.
 
 See [API contracts](docs/api-contracts.md), [permission matrix](docs/permission-matrix.md), and [security model](docs/security.md).
+
+
+## Full product requirements
+
+The complete VoiceCore product scope is now captured in [full product requirements](docs/full-product-requirements.md), covering identity, privacy, RBAC, chats, calls, anonymous matching, moderation, reports, VH Coins, gifts, referrals, Core Premium, administration, audit, security, testing and phased delivery.
+
+Migration `0002_full_requirements.sql` extends the foundation with streamer settings, admin action records, role/helper approval workflows, configurable DOB visibility, operational indexes and the full permission/configuration seed.
+
+Implementation remains incremental: preserve working code, keep production adapters separate from development mocks, and finish each phase with server-side authorization, persistence, contracts, tests and audit/privacy controls.
