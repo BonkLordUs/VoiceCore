@@ -23,3 +23,21 @@ function topUp() { modal({ title: 'Top up VH wallet', body: '<label>Choose a pac
 function report() { modal({ title: 'Report conversation', body: '<label>Category<select><option>Harassment</option><option>Spam</option><option>Threats</option><option>NSFW</option><option>Scam</option><option>Other</option></select></label><label>What happened?<textarea placeholder="Add context for the moderation team"></textarea></label>', confirm: 'Submit report', onConfirm: () => show('Report draft saved. Connect Report Service to submit it securely.') }); }
 document.addEventListener('click', event => { const button = event.target.closest('button'); if (!button || button.closest('.modal') || button.matches('.nav-item, #newChat, #privacyButton, .chat-row')) return; const text = button.textContent.trim().toLowerCase(); if (text.includes('send')) return transfer(); if (text.includes('top up')) return topUp(); if (text.includes('report')) return report(); if (text.includes('find a partner')) return modal({ title: 'Anonymous match', body: '<label>Language<select><option>English</option><option>Русский</option></select></label><label>Interests<input placeholder="Gaming, Music, Technology"></label><p class="form-note">Matching only starts after age, block-list and safety checks on the server.</p>', confirm: 'Find partner', onConfirm: () => show('Match preferences saved locally. Matchmaking Service is required to search safely.') }); if (text.includes('gift')) return modal({ title: 'Gift store', body: '<div class="gift-options"><button data-gift="Heart">♥ Heart · 50 VH</button><button data-gift="Rose">✿ Rose · 100 VH</button><button data-gift="Diamond">◆ Diamond · 500 VH</button></div>', confirm: 'Close' }); if (text.includes('profile')) return openPage('profile'); if (text.includes('dashboard')) return openPage('creator'); if (text.includes('premium')) return modal({ title: 'Core Premium', body: '<p>Premium is cosmetic and never grants administrative permissions.</p><label>Plan<select><option>Monthly</option><option>Yearly</option></select></label>', confirm: 'Choose plan', onConfirm: () => show('Premium checkout requires Wallet and Premium services.') }); if (button.matches('.conversation-actions button')) return text.includes('⌁') || text.includes('▣') ? show('Calls require authenticated WebRTC signaling and an SFU.') : show('Conversation options opened.'); if (button.matches('.icon-button')) return show('Search and notification services are not connected yet.'); if (!button.matches('.send')) show('This control needs its production service connection.'); });
 if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(() => {}));
+
+
+// Theme system: persisted locally, with system preference as the first-run default.
+const themeToggle = $('#themeToggle');
+const themeLabel = $('#themeLabel');
+const themeIcon = $('#themeIcon');
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  themeLabel.textContent = theme === 'dark' ? 'Dark theme' : 'Light theme';
+  themeIcon.textContent = theme === 'dark' ? '☾' : '☀';
+}
+const savedTheme = localStorage.getItem('voicecore.theme');
+applyTheme(savedTheme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+themeToggle?.addEventListener('click', () => {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('voicecore.theme', next);
+  applyTheme(next);
+});
