@@ -28,6 +28,10 @@ python3 -m http.server 4173 --directory apps/web
 python3 tests/validate_foundation.py
 ```
 
+## Phone installation and Android release
+
+The web shell is an installable PWA when deployed over HTTPS. A signed Android host project and Play release instructions are available in [mobile release](docs/mobile-release.md). A workspace/private-network address cannot be opened by arbitrary phones on the Internet.
+
 ## Database
 
 The initial PostgreSQL schema is in `db/migrations/0001_foundation.sql`. Apply it through the deployment migration runner using a transaction-aware migration tool (for example Atlas, Flyway, or node-pg-migrate); do not run application DDL at startup in production.

@@ -8,4 +8,7 @@ assert "CHECK(sender_id<>recipient_id)" in sql
 assert 'idempotency_key text UNIQUE NOT NULL' in sql
 assert (root/'apps/web/index.html').exists()
 assert (root/'.env.example').exists()
+assert (root/'apps/web/manifest.webmanifest').exists()
+assert (root/'apps/web/service-worker.js').exists()
+assert (root/'apps/mobile-android/app/src/main/AndroidManifest.xml').exists()
 print('VoiceCore foundation contract checks passed.')
